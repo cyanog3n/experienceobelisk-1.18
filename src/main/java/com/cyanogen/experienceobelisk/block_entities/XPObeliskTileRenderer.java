@@ -13,6 +13,7 @@ import software.bernie.geckolib3.renderers.geo.GeoBlockRenderer;
 public class XPObeliskTileRenderer extends GeoBlockRenderer<XPObeliskEntity> {
     public XPObeliskTileRenderer(BlockEntityRendererProvider.Context rendererDispatcherIn) {
         super(rendererDispatcherIn, new AnimatedGeoModel<XPObeliskEntity>() {
+            //render setup for geckolib animated model
             @Override
             public ResourceLocation getModelLocation(XPObeliskEntity animatable) {
                 return new ResourceLocation(ExperienceObelisk.MOD_ID, "geo/xpobelisk.geo.json");

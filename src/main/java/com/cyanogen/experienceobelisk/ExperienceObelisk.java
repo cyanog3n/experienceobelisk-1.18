@@ -2,13 +2,14 @@ package com.cyanogen.experienceobelisk;
 
 import com.cyanogen.experienceobelisk.block.ModBlocksInit;
 import com.cyanogen.experienceobelisk.block_entities.ModTileEntitiesInit;
-import com.cyanogen.experienceobelisk.block_entities.XPObeliskTileRenderer;
+import com.cyanogen.experienceobelisk.block_entities.XPObeliskEntity;
 import com.cyanogen.experienceobelisk.fluid.ModFluidsInit;
 import com.cyanogen.experienceobelisk.item.ModItemsInit;
-import net.minecraftforge.client.event.EntityRenderersEvent;
+import com.cyanogen.experienceobelisk.network.PacketHandler;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -32,16 +33,12 @@ public class ExperienceObelisk
         ModItemsInit.register(eventBus);
         ModBlocksInit.register(eventBus);
         ModTileEntitiesInit.register(eventBus);
+        ModFluidsInit.register(eventBus);
         GeckoLib.initialize();
+        PacketHandler.init();
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
-    }
-
-    @SubscribeEvent
-    public static void registerRenderers(final EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(ModTileEntitiesInit.XPOBELISK_BE.get(), XPObeliskTileRenderer::new);
-        LOGGER.info("Entity Renderer registered");
     }
 
     private void setup(final FMLCommonSetupEvent event)
@@ -50,7 +47,9 @@ public class ExperienceObelisk
         LOGGER.info("HELLO FROM PREINIT");
 
         //setting render types for custom models
-        //note: set geckolib model types in tile renderer
-        //ItemBlockRenderTypes.setRenderLayer(ModBlocks.experience_obelisk, RenderType.translucent());
+        //set geckolib render types in tile renderer
+
+        ItemBlockRenderTypes.setRenderLayer(ModFluidsInit.RAW_EXPERIENCE.get(), RenderType.translucent());
+        ItemBlockRenderTypes.setRenderLayer(ModFluidsInit.RAW_EXPERIENCE_FLOWING.get(), RenderType.translucent());
     }
 }

@@ -1,5 +1,6 @@
-package com.cyanogen.experienceobelisk;
+package com.cyanogen.experienceobelisk.renderer;
 
+import com.cyanogen.experienceobelisk.ExperienceObelisk;
 import com.cyanogen.experienceobelisk.block_entities.ModTileEntitiesInit;
 import com.cyanogen.experienceobelisk.block_entities.XPObeliskTileRenderer;
 import net.minecraftforge.api.distmarker.Dist;
@@ -15,7 +16,7 @@ public class RendererInit {
     // Directly reference a log4j logger.
     private static final Logger LOGGER = LogManager.getLogger();
 
-    //registering geckolib custom renderer
+    //registering geckolib geoblock custom renderer for xp obelisk block entity
     @SubscribeEvent
     public static void registerRenderers(final EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(ModTileEntitiesInit.XPOBELISK_BE.get(), XPObeliskTileRenderer::new);
