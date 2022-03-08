@@ -1,8 +1,6 @@
 package com.cyanogen.experienceobelisk.gui;
 
 import com.cyanogen.experienceobelisk.block_entities.XPObeliskEntity;
-import com.cyanogen.experienceobelisk.network.PacketHandler;
-import com.cyanogen.experienceobelisk.network.UpdateXPToServer;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -10,10 +8,13 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Widget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+
+import static com.cyanogen.experienceobelisk.gui.XPManager.levelsToXP;
+import static com.cyanogen.experienceobelisk.gui.XPManager.xpToLevels;
 
 
 public class ExperienceObeliskScreen extends Screen{
@@ -22,8 +23,6 @@ public class ExperienceObeliskScreen extends Screen{
     public Player player;
     public BlockPos pos;
     public XPObeliskEntity xpobelisk;
-    int finalXP;
-    int playerXP;
     private Button add1;
     private Button add10;
     private Button addAll;
@@ -31,8 +30,7 @@ public class ExperienceObeliskScreen extends Screen{
     private Button drain10;
     private Button drainAll;
 
-
-    private ResourceLocation texture = new ResourceLocation("experienceobelisk:textures/gui/container/furnace.png");
+    private final ResourceLocation texture = new ResourceLocation("experienceobelisk:textures/gui/container/dark_bg2.png");
 
     public ExperienceObeliskScreen(Level level, Player player, BlockPos pos) {
         super(new TextComponent("Experience Obelisk"));
@@ -52,7 +50,6 @@ public class ExperienceObeliskScreen extends Screen{
         }
     }
 
-
     @Override
     public boolean isPauseScreen() {
         return false;
@@ -64,151 +61,155 @@ public class ExperienceObeliskScreen extends Screen{
     }
 
     @Override
-    protected void init() {}
-
-    @Override
-    public void tick() {}
-
-    @Override
     public void render(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
         renderBackground(pPoseStack);
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         RenderSystem.setShaderTexture(0, texture);
 
-        int textureWidth = 176;
-        int textureHeight = 166;
-        int x = this.width / 2 - textureWidth / 2;
-        int y = this.height / 2 - textureHeight / 2;
+        int textureWidth = 256;
+        int textureHeight = 256;
+        int x = this.width / 2 - 176 / 2;
+        int y = this.height / 2 - 166 / 2;
 
+        int n = xpobelisk.getFluidAmount() - levelsToXP(xpToLevels(xpobelisk.getFluidAmount())); //remaining xp
+        int m = levelsToXP(xpToLevels(xpobelisk.getFluidAmount()) + 1) - levelsToXP(xpToLevels(xpobelisk.getFluidAmount())); //xp for next level
+        int p = Math.round(n * 138 / m);
 
         //render gui texture
-        blit(pPoseStack, x, y, (float)0, (float)0, 176, 166, textureWidth, textureHeight);
+        blit(pPoseStack, x, y, 0, 0, 176, 166, textureWidth, textureHeight);
 
+        //render xp bar
+        blit(pPoseStack, this.width / 2 - 138 / 2, this.height / 2 + 50, 0, 169, 138, 5, textureWidth, textureHeight);
+        blit(pPoseStack, this.width / 2 - 138 / 2, this.height / 2 + 50, 0, 173, p, 5, textureWidth, textureHeight);
+
+        //descriptors & info
+        drawCenteredString(new PoseStack(), this.font, "Experience Obelisk",
+                this.width / 2,this.height / 2 - 76, 0xFFFFFF);
+        drawString(new PoseStack(), this.font, "Store",
+                this.width / 2 - 77,this.height / 2 - 56, 0xFFFFFF);
+        drawString(new PoseStack(), this.font, "Retrieve",
+                this.width / 2 - 77,this.height / 2 - 10, 0xFFFFFF);
         drawCenteredString(new PoseStack(), this.font, String.valueOf(xpobelisk.getFluidAmount()) + " mB",
-                this.width / 2,this.height / 2 + 30, 0xFFFFFF); //ARGB
-        drawCenteredString(new PoseStack(), this.font, String.valueOf(XpToLevels(xpobelisk.getFluidAmount())) + " Levels",
-                this.width / 2,this.height / 2 + 45, 0xFFFFFF);
+                this.width / 2,this.height / 2 + 35, 0xFFFFFF);
+        drawCenteredString(new PoseStack(), this.font, String.valueOf(xpToLevels(xpobelisk.getFluidAmount())),
+                this.width / 2,this.height / 2 + 60, 0x4DFF12);
 
+        //widgets
         setupWidgetElements();
 
         //render widgets
-       for(Widget widget : this.renderables) {
-           widget.render(pPoseStack, pMouseX, pMouseY, pPartialTick);
-       }
-
-    }
-
-    public static int LevelsToXP(int levels){
-        if (levels <= 16) {
-            return (int) (Math.pow(levels, 2) + 6 * levels);
-        } else if (levels >= 17 && levels <= 31) {
-            return (int) (2.5 * Math.pow(levels, 2) - 40.5 * levels + 360);
-        } else if (levels >= 32) {
-            return (int) (4.5 * Math.pow(levels, 2) - 162.5 * levels + 2220);
+        for(Widget widget : this.renderables) {
+            widget.render(pPoseStack, pMouseX, pMouseY, pPartialTick);
         }
-        return 0;
-    }
 
-    public static int XpToLevels(int xp){
-        if (xp < 394) {
-            return (int) (Math.sqrt(xp + 9) - 3);
-        } else if (xp >= 394 && xp < 1628) {
-            return (int) ((Math.sqrt(40 * xp - 7839) + 81) * 0.1);
-        } else if (xp >= 1628) {
-            return (int) ((Math.sqrt(72 * xp - 54215) + 325) / 18);
-        }
-        return 0;
     }
 
     //buttons and whatnot go here
     private void setupWidgetElements() {
 
         clearWidgets();
-        playerXP = LevelsToXP(player.experienceLevel) + Math.round(player.experienceProgress * player.getXpNeededForNextLevel());
+
+        Style style = Style.EMPTY;
+        Style green = style.withColor(0x45FF5B);
+        Style red = style.withColor(0xFF454B);
+        int w = 50; //width (divisible by 2)
+        int h = 20; //height
+        int s = 2; //spacing
+        int y1 = 43;
+        int y2 = -3;
 
         //deposit
-        add1 = addRenderableWidget(new Button(this.width / 2 - 75, this.height / 2 - 40, 40, 20, new TextComponent("+1"), (onPress) -> {
 
-            if(player.experienceLevel >= 1){
+        add1 = addRenderableWidget(new Button((int) (this.width / 2 - 1.5*w - s), this.height / 2 - y1, w, h, new TextComponent("+1")
+                .setStyle(green), (onPress) -> {
 
-                finalXP = LevelsToXP(player.experienceLevel - 1) + Math.round(player.experienceProgress *
-                        (LevelsToXP(player.experienceLevel) - LevelsToXP(player.experienceLevel - 1)));
+            XPManager.storeXP(1, player, xpobelisk);
+            int tick = player.tickCount;
+            player.displayClientMessage(new TextComponent(String.valueOf(tick)), false);
 
-                PacketHandler.INSTANCE.sendToServer(new UpdateXPToServer(0,-1));
-
-                xpobelisk.fillFromClient(playerXP - finalXP);
-            }
-            else if (playerXP > 0){
-                xpobelisk.fillFromClient(playerXP);
-                PacketHandler.INSTANCE.sendToServer(new UpdateXPToServer(0,-2147483647));
-            }
-
-            //player.displayClientMessage(new TextComponent(String.valueOf(playerXP)),false);
-
-        }));
-        add10 = addRenderableWidget(new Button(this.width / 2 - 20, this.height / 2 - 40, 40, 20, new TextComponent("+10"), (onPress) -> {
-
-            if(player.experienceLevel >= 10){
-
-                finalXP = LevelsToXP(player.experienceLevel - 10) + Math.round(player.experienceProgress *
-                        (LevelsToXP(player.experienceLevel - 9) - LevelsToXP(player.experienceLevel - 10)));
-
-                PacketHandler.INSTANCE.sendToServer(new UpdateXPToServer(0,-10));
-
-                xpobelisk.fillFromClient(playerXP - finalXP);
-            }
-            else if (playerXP > 0){
-                xpobelisk.fillFromClient(playerXP);
-                PacketHandler.INSTANCE.sendToServer(new UpdateXPToServer(0,-2147483647));
-            }
+        },
+                new Button.OnTooltip() {
+                    @Override
+                    public void onTooltip(Button pButton, PoseStack pPoseStack, int pMouseX, int pMouseY) {
+                        renderTooltip(pPoseStack, new TranslatableComponent("tooltip.experienceobelisk.experience_obelisk.add1"), pMouseX, pMouseY);
+                    }
+                }
+        ));
 
 
-        }));
-        addAll = addRenderableWidget(new Button(this.width / 2 + 35, this.height / 2 - 40, 40, 20, new TextComponent("+All"), (onPress) -> {
+        add10 = addRenderableWidget(new Button(this.width / 2 - w/2, this.height / 2 - y1, w, h, new TextComponent("+10")
+                .setStyle(green), (onPress) -> {
 
-            xpobelisk.fillFromClient(playerXP);
-            PacketHandler.INSTANCE.sendToServer(new UpdateXPToServer(0,-2147483647));
+            XPManager.storeXP(10, player, xpobelisk);
 
-        }));
+        },
+                new Button.OnTooltip() {
+                    @Override
+                    public void onTooltip(Button pButton, PoseStack pPoseStack, int pMouseX, int pMouseY) {
+                        renderTooltip(pPoseStack, new TranslatableComponent("tooltip.experienceobelisk.experience_obelisk.add10"), pMouseX, pMouseY);
+                    }
+                }
+        ));
+
+        addAll = addRenderableWidget(new Button((int) (this.width / 2 + 0.5*w + s), this.height / 2 - y1, w, h, new TextComponent("+All")
+                .setStyle(green), (onPress) -> {
+
+            XPManager.storeXP(player.experienceLevel + 1, player, xpobelisk);
+
+        },
+                new Button.OnTooltip() {
+                    @Override
+                    public void onTooltip(Button pButton, PoseStack pPoseStack, int pMouseX, int pMouseY) {
+                        renderTooltip(pPoseStack, new TranslatableComponent("tooltip.experienceobelisk.experience_obelisk.addAll"), pMouseX, pMouseY);
+                    }
+                }
+        ));
+
 
         //withdraw
-        drain1 = addRenderableWidget(new Button(this.width / 2 - 75, this.height / 2 - 10, 40, 20, new TextComponent("-1"), (onPress) -> {
+        drain1 = addRenderableWidget(new Button((int) (this.width / 2 - 1.5*w - s), this.height / 2 - y2, w, h, new TextComponent("-1")
+                .setStyle(red), (onPress) -> {
 
-            finalXP = LevelsToXP(player.experienceLevel + 1) + Math.round(player.experienceProgress *
-                    (LevelsToXP(player.experienceLevel + 2) - LevelsToXP(player.experienceLevel + 1)));
+            XPManager.retrieveXP(1, player, xpobelisk);
 
-            if(xpobelisk.getFluidAmount() >= finalXP - playerXP){
-                xpobelisk.drainFromClient(finalXP - playerXP);
-                PacketHandler.INSTANCE.sendToServer(new UpdateXPToServer(0,1));
-            }
-            else if(xpobelisk.getFluidAmount() > 0){
-                PacketHandler.INSTANCE.sendToServer(new UpdateXPToServer(xpobelisk.getFluidAmount(),0));
-                xpobelisk.emptyFromClient();
-            }
+        },
+                new Button.OnTooltip() {
+                    @Override
+                    public void onTooltip(Button pButton, PoseStack pPoseStack, int pMouseX, int pMouseY) {
+                        renderTooltip(pPoseStack, new TranslatableComponent("tooltip.experienceobelisk.experience_obelisk.drain1"), pMouseX, pMouseY);
+                    }
+                }
+        ));
 
-        }));
-        drain10 = addRenderableWidget(new Button(this.width / 2 - 20, this.height / 2 - 10, 40, 20, new TextComponent("-10"), (onPress) -> {
+        drain10 = addRenderableWidget(new Button(this.width / 2 - w/2, this.height / 2 - y2, w, h, new TextComponent("-10")
+                .setStyle(red), (onPress) -> {
 
-            finalXP = LevelsToXP(player.experienceLevel + 10) + Math.round(player.experienceProgress *
-                    (LevelsToXP(player.experienceLevel + 11) - LevelsToXP(player.experienceLevel + 10)));
+            XPManager.retrieveXP(10, player, xpobelisk);
 
-            if(xpobelisk.getFluidAmount() >= finalXP - playerXP){
-                xpobelisk.drainFromClient(finalXP - playerXP);
-                PacketHandler.INSTANCE.sendToServer(new UpdateXPToServer(0,10));
-            }
-            else if(xpobelisk.getFluidAmount() > 0){
-                PacketHandler.INSTANCE.sendToServer(new UpdateXPToServer(xpobelisk.getFluidAmount(),0));
-                xpobelisk.emptyFromClient();
-            }
+        },
+                new Button.OnTooltip() {
+                    @Override
+                    public void onTooltip(Button pButton, PoseStack pPoseStack, int pMouseX, int pMouseY) {
+                        renderTooltip(pPoseStack, new TranslatableComponent("tooltip.experienceobelisk.experience_obelisk.drain10"), pMouseX, pMouseY);
+                    }
+                }
+        ));
 
-        }));
-        drainAll = addRenderableWidget(new Button(this.width / 2 + 35, this.height / 2 - 10, 40, 20, new TextComponent("-All"), (onPress) -> {
+        drainAll = addRenderableWidget(new Button((int) (this.width / 2 + 0.5*w + s), this.height / 2 - y2, w, h, new TextComponent("-All")
+                .setStyle(red), (onPress) -> {
 
-            PacketHandler.INSTANCE.sendToServer(new UpdateXPToServer(xpobelisk.getFluidAmount(),0));
-            xpobelisk.emptyFromClient();
+            XPManager.retrieveXP(64000000, player, xpobelisk);
 
-        }));
+        },
+                new Button.OnTooltip() {
+                    @Override
+                    public void onTooltip(Button pButton, PoseStack pPoseStack, int pMouseX, int pMouseY) {
+                        renderTooltip(pPoseStack, new TranslatableComponent("tooltip.experienceobelisk.experience_obelisk.drainAll"), pMouseX, pMouseY);
+                    }
+                }
+        ));
+
 
     }
 
