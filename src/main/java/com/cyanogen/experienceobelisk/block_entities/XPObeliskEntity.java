@@ -1,21 +1,15 @@
 package com.cyanogen.experienceobelisk.block_entities;
 
 import com.cyanogen.experienceobelisk.fluid.ModFluidsInit;
-import com.cyanogen.experienceobelisk.network.PacketHandler;
-import com.cyanogen.experienceobelisk.network.UpdateBlockFluidToServer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ExperienceOrb;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -23,13 +17,11 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.common.util.WorldCapabilityData;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.templates.FluidTank;
 
-import org.lwjgl.system.CallbackI;
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.PlayState;
 import software.bernie.geckolib3.core.builder.AnimationBuilder;
@@ -42,9 +34,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import java.util.List;
-import java.util.function.Predicate;
-
-import static com.cyanogen.experienceobelisk.network.UpdateBlockFluidToServer.Request.*;
 
 
 public class XPObeliskEntity extends BlockEntity implements IAnimatable{
@@ -89,26 +78,33 @@ public class XPObeliskEntity extends BlockEntity implements IAnimatable{
     public static double radius = 2.5;
 
     private FluidTank xpObeliskTank() {
-        return new FluidTank(64000000){
+        return new FluidTank(64000000){ //3789 levels
             @Override
             protected void onContentsChanged()
             {
                 super.onContentsChanged();
                 setChanged();
             }
+
+            @Override
+            public void setFluid(FluidStack stack)
+            {
+                this.fluid = stack;
+                setChanged();
+            }
+
             @Override
             public boolean isFluidValid(FluidStack stack)
             {
                 return stack.getFluid() == rawExperience;
             }
             @Override
-            public boolean isFluidValid(int tank, @Nonnull FluidStack stack) {
-                return stack.getFluid() == rawExperience;
-            }
+            public boolean isFluidValid(int tank, @Nonnull FluidStack stack) { return stack.getFluid() == rawExperience; }
         };
     }
 
     public static <T> void tick(Level level, BlockPos pos, BlockState state, T blockEntity) {
+
         level.sendBlockUpdated(pos, state, state, 2);
 
         //passive xp absorption ability
@@ -153,22 +149,27 @@ public class XPObeliskEntity extends BlockEntity implements IAnimatable{
 
     //sends CompoundTag out with nbt data
     @Override
-    public CompoundTag getUpdateTag() {
+    public CompoundTag getUpdateTag()
+    {
         return tank.writeToNBT(super.getUpdateTag());
     }
 
-    //receives and loads nbt data from incoming tag
+    //receives and loads nbt data whenever chunk is loaded
     @Override
-    public void handleUpdateTag(CompoundTag tag){
+    public void handleUpdateTag(CompoundTag tag)
+    {
         load(tag);
         tank.readFromNBT(tag);
     }
 
+    //gets packet to send to client
     @Override
-    public Packet<ClientGamePacketListener> getUpdatePacket() {
+    public Packet<ClientGamePacketListener> getUpdatePacket()
+    {
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
+    //updates client whenever level.sendBlockUpdated is called
     @Override
     public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt)
     {
@@ -177,6 +178,7 @@ public class XPObeliskEntity extends BlockEntity implements IAnimatable{
             load(compoundtag);
         }
     }
+
 
     @Override
     @Nonnull
@@ -188,39 +190,27 @@ public class XPObeliskEntity extends BlockEntity implements IAnimatable{
         //controls which sides can give or receive fluids
     }
 
-    public void fill(int amount){
-            tank.fill(new FluidStack(rawExperience, amount), IFluidHandler.FluidAction.EXECUTE);
+    public int fill(int amount){
+            level.sendBlockUpdated(pos, state, state, 2);
+            return tank.fill(new FluidStack(rawExperience, amount), IFluidHandler.FluidAction.EXECUTE);
+
     }
 
     public void drain(int amount){
             tank.drain(new FluidStack(rawExperience, amount), IFluidHandler.FluidAction.EXECUTE);
+            level.sendBlockUpdated(pos, state, state, 2);
     }
 
     public void setFluid(int amount){
-        tank.setFluid(new FluidStack(rawExperience, amount));
+            tank.setFluid(new FluidStack(rawExperience, amount));
+            level.sendBlockUpdated(pos, state, state, 2);
     }
 
     public int getFluidAmount(){
         return tank.getFluidAmount();
     }
 
-    //for clientside access via packethandler
-
-    public void fillFromClient(int amount){
-        PacketHandler.INSTANCE.sendToServer(new UpdateBlockFluidToServer(pos, amount, FILL));
-    }
-
-    public void drainFromClient(int amount){
-        PacketHandler.INSTANCE.sendToServer(new UpdateBlockFluidToServer(pos, amount, DRAIN));
-    }
-
-    public void setFromClient(int amount){
-        PacketHandler.INSTANCE.sendToServer(new UpdateBlockFluidToServer(pos, amount, SET));
-    }
-
-    public void emptyFromClient(){
-        PacketHandler.INSTANCE.sendToServer(new UpdateBlockFluidToServer(pos, 0, EMPTY));
-    }
+    public int getSpace(){ return tank.getSpace(); }
 
 
 }
