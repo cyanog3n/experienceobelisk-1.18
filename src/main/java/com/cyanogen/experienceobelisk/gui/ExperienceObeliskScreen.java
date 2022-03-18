@@ -14,6 +14,7 @@ import net.minecraft.network.chat.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.fml.ModList;
 
 import static com.cyanogen.experienceobelisk.network.UpdateToServer.Request.*;
 
@@ -97,8 +98,10 @@ public class ExperienceObeliskScreen extends Screen{
 
         //breaks around 2980000 mB for some reason
 
-        int n = xpobelisk.getFluidAmount() - levelsToXP(xpToLevels(xpobelisk.getFluidAmount())); //remaining xp
-        int m = levelsToXP(xpToLevels(xpobelisk.getFluidAmount()) + 1) - levelsToXP(xpToLevels(xpobelisk.getFluidAmount())); //xp for next level
+        int fluidAmount = xpobelisk.getFluidAmount();
+
+        int n = fluidAmount - levelsToXP(xpToLevels(fluidAmount)); //remaining xp
+        int m = levelsToXP(xpToLevels(fluidAmount) + 1) - levelsToXP(xpToLevels(fluidAmount)); //xp for next level
         int p = n * 138 / m;
 
         //render gui texture
@@ -115,9 +118,9 @@ public class ExperienceObeliskScreen extends Screen{
                 this.width / 2 - 77,this.height / 2 - 56, 0xFFFFFF);
         drawString(new PoseStack(), this.font, "Retrieve",
                 this.width / 2 - 77,this.height / 2 - 10, 0xFFFFFF);
-        drawCenteredString(new PoseStack(), this.font, String.valueOf(xpobelisk.getFluidAmount()) + " mB",
+        drawCenteredString(new PoseStack(), this.font, String.valueOf(fluidAmount) + " mB",
                 this.width / 2,this.height / 2 + 35, 0xFFFFFF);
-        drawCenteredString(new PoseStack(), this.font, String.valueOf(xpToLevels(xpobelisk.getFluidAmount())),
+        drawCenteredString(new PoseStack(), this.font, String.valueOf(xpToLevels(fluidAmount)),
                 this.width / 2,this.height / 2 + 60, 0x4DFF12);
 
         //widgets

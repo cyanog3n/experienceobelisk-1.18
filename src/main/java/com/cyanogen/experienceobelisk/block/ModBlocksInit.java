@@ -27,8 +27,8 @@ public class ModBlocksInit {
     public static final DeferredRegister<Block> BLOCKS =
             DeferredRegister.create(ForgeRegistries.BLOCKS, ExperienceObelisk.MOD_ID);
 
-    //block registrations go here:
-    public static final RegistryObject<Block> EXPERIENCE_OBELISK = registerBlock("experience_obelisk", ExperienceObeliskBlock::new, ModCreativeModeTab.MOD_TAB);
+
+    public static final RegistryObject<Block> EXPERIENCE_OBELISK = BLOCKS.register("experience_obelisk", ExperienceObeliskBlock::new);
 
     public static final RegistryObject<LiquidBlock> RAW_EXPERIENCE = BLOCKS.register("raw_experience",
             () -> new LiquidBlock(ModFluidsInit.RAW_EXPERIENCE_FLOWING, BlockBehaviour.Properties.of(Material.WATER)
@@ -46,14 +46,14 @@ public class ModBlocksInit {
                     })
             ));
 
-    //method to register block
+
     private static <T extends Block> RegistryObject<T> registerBlock(String name, Supplier<T> block, CreativeModeTab tab){
         RegistryObject<T> toReturn = BLOCKS.register(name, block);
         registerBlockItem(name, toReturn, tab);
         return toReturn;
     }
 
-    //method to register block item, put it in same creative tab
+
     private static <T extends Block> RegistryObject<Item> registerBlockItem(String name, RegistryObject<T> block,
                                                                             CreativeModeTab tab) {
         return ModItemsInit.ITEMS.register(name, () -> new BlockItem(block.get(),

@@ -3,7 +3,6 @@ package com.cyanogen.experienceobelisk.network;
 import com.cyanogen.experienceobelisk.block_entities.XPObeliskEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.network.NetworkEvent;
@@ -11,15 +10,14 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
-import static com.cyanogen.experienceobelisk.network.UpdateToServer.Request.*;
 
 public class UpdateToServer {
 
     public static BlockPos pos;
     public static int XP;
     public static Request request;
-    private int playerXP;
-    private int finalXP;
+    private long playerXP;
+    private long finalXP;
 
     public UpdateToServer(BlockPos pos, int XP, Request request) {
         this.pos = pos;
@@ -33,7 +31,6 @@ public class UpdateToServer {
         FILL_ALL,
         DRAIN_ALL
     }
-
 
     public UpdateToServer(FriendlyByteBuf buffer) {
 
@@ -66,6 +63,7 @@ public class UpdateToServer {
 
                 if(request == Request.FILL){
 
+
                     //final amount of experience points the player will have after storing n levels
                     finalXP = levelsToXP(sender.experienceLevel - XP) + Math.round(sender.experienceProgress *
                             (levelsToXP(sender.experienceLevel - XP + 1) - levelsToXP(sender.experienceLevel - XP)));
@@ -75,19 +73,19 @@ public class UpdateToServer {
 
                     //if amount to add exceeds remaining capacity
                     else if(playerXP - finalXP >= xpobelisk.getSpace()){
-                        sender.giveExperiencePoints(-xpobelisk.fill(playerXP - finalXP));
+                        sender.giveExperiencePoints(-xpobelisk.fill(16000000));
                     }
 
                     //normal operation
                     else if(sender.experienceLevel >= XP){
 
-                        xpobelisk.fill(playerXP - finalXP);
+                        xpobelisk.fill((int) (playerXP - finalXP));
                         sender.giveExperienceLevels(-XP);
 
                     }
                     else if (playerXP >= 1){
 
-                        sender.giveExperiencePoints(-xpobelisk.fill(playerXP));
+                        sender.giveExperiencePoints(-xpobelisk.fill((int) playerXP));
 
                     }
                 }
@@ -103,7 +101,7 @@ public class UpdateToServer {
 
                     if(amount >= finalXP - playerXP){
 
-                        xpobelisk.drain(finalXP - playerXP);
+                        xpobelisk.drain((int) (finalXP - playerXP));
                         sender.giveExperienceLevels(XP);
 
                     }
@@ -113,9 +111,21 @@ public class UpdateToServer {
                         xpobelisk.setFluid(0);
                     }
                 }
+
+                //-----FILL OR DRAIN ALL-----//
+
                 else if(request == Request.FILL_ALL){
 
-                    sender.giveExperiencePoints(-xpobelisk.fill(playerXP));
+                    if(playerXP <= xpobelisk.getSpace()){
+                        xpobelisk.fill((int) playerXP);
+                        sender.setExperiencePoints(0);
+                        sender.setExperienceLevels(0);
+                    }
+                    else{
+                        sender.giveExperiencePoints(-xpobelisk.getSpace());
+                        xpobelisk.setFluid(16000000);
+                    }
+
 
                 }
                 else if(request == Request.DRAIN_ALL){

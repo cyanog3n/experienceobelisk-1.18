@@ -21,7 +21,6 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.templates.FluidTank;
-
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.PlayState;
 import software.bernie.geckolib3.core.builder.AnimationBuilder;
@@ -32,7 +31,6 @@ import software.bernie.geckolib3.core.manager.AnimationFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
 import java.util.List;
 
 
@@ -69,7 +67,6 @@ public class XPObeliskEntity extends BlockEntity implements IAnimatable{
 
     //-----------FLUID HANDLER-----------//
 
-
     protected FluidTank tank = xpObeliskTank();
     private final LazyOptional<IFluidHandler> handler = LazyOptional.of(() -> tank);
     private static final Fluid rawExperience = ModFluidsInit.RAW_EXPERIENCE.get().getSource();
@@ -78,7 +75,7 @@ public class XPObeliskEntity extends BlockEntity implements IAnimatable{
     public static double radius = 2.5;
 
     private FluidTank xpObeliskTank() {
-        return new FluidTank(64000000){ //3789 levels
+        return new FluidTank(16000000){ //1903 levels
             @Override
             protected void onContentsChanged()
             {
@@ -98,10 +95,14 @@ public class XPObeliskEntity extends BlockEntity implements IAnimatable{
             {
                 return stack.getFluid() == rawExperience;
             }
+
             @Override
-            public boolean isFluidValid(int tank, @Nonnull FluidStack stack) { return stack.getFluid() == rawExperience; }
+            public boolean isFluidValid(int tank, @Nonnull FluidStack stack) {
+                return stack.getFluid() == rawExperience;
+            }
         };
     }
+
 
     public static <T> void tick(Level level, BlockPos pos, BlockState state, T blockEntity) {
 
@@ -123,11 +124,12 @@ public class XPObeliskEntity extends BlockEntity implements IAnimatable{
 
         if(entity instanceof XPObeliskEntity){
             for(Entity e : list){
-                if(e instanceof ExperienceOrb){
-                //  level.getNearestPlayer(e, 100).displayClientMessage(new TextComponent("ding!"), false);
+                if(e instanceof ExperienceOrb && ((XPObeliskEntity) entity).getSpace() > 0){
+
                     int value = ((ExperienceOrb) e).getValue();
                     ((XPObeliskEntity) entity).fill(value);
                     e.discard();
+
                 }
             }
         }
@@ -190,20 +192,22 @@ public class XPObeliskEntity extends BlockEntity implements IAnimatable{
         //controls which sides can give or receive fluids
     }
 
-    public int fill(int amount){
-            level.sendBlockUpdated(pos, state, state, 2);
-            return tank.fill(new FluidStack(rawExperience, amount), IFluidHandler.FluidAction.EXECUTE);
-
+    public int fill(int amount)
+    {
+        level.sendBlockUpdated(pos, state, state, 2);
+        return tank.fill(new FluidStack(rawExperience, amount), IFluidHandler.FluidAction.EXECUTE);
     }
 
-    public void drain(int amount){
-            tank.drain(new FluidStack(rawExperience, amount), IFluidHandler.FluidAction.EXECUTE);
-            level.sendBlockUpdated(pos, state, state, 2);
+    public void drain(int amount)
+    {
+        tank.drain(new FluidStack(rawExperience, amount), IFluidHandler.FluidAction.EXECUTE);
+        level.sendBlockUpdated(pos, state, state, 2);
     }
 
-    public void setFluid(int amount){
-            tank.setFluid(new FluidStack(rawExperience, amount));
-            level.sendBlockUpdated(pos, state, state, 2);
+    public void setFluid(int amount)
+    {
+        tank.setFluid(new FluidStack(rawExperience, amount));
+        level.sendBlockUpdated(pos, state, state, 2);
     }
 
     public int getFluidAmount(){
